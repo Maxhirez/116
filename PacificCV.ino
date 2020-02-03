@@ -15,7 +15,7 @@
 
 
 #define gatePin A4
-#define semitoneValue 68.25
+static const uint8_t analog_pins[]={A0,A1,A2,A3};
 
 int detect, lastRead, minCap, maxCap,;
 void setup(){
@@ -23,39 +23,35 @@ void setup(){
   for (int thisPin = 2; thisPin<=9;thisPin++){
     pinMode(thisPin,INPUT);
   }
-  //octave keys
-  pinMode(octaveUp, INPUT);
-  pinMode(octaveDown, INPUT);
-  pinMode(bendUp, INPUT);
-  pinMode(bendDown, INPUT);
+  for (int thisPin = 10; thisPin <= 17;thisPin++){
+    thisPin=thisPin<=13?thisPin:analog_pins[thisPin-14];//if this works I'll shit
+    pinMode(thisPin, OUTPUT);
+  }
   pinMode(gatePin, OUTPUT);
   lastRead = 0;
   minCap = 5;
   maxCap = 12;
   octave = 2;
   digitalWrite(gatePin, LOW);
-  noteVoltage.begin(0x62);
-  pressureVoltage.begin(0x63);
 }
 void loop(){
   //kill last note if released
   detect = readCapacitivePin(lastRead);
-  if (detect<minCap) {digitalWrite(gatePin, LOW);}
-  //octave up or down
+  if (detect<minCap) {digitalWrite(gatePin, LOW);}//turn off if nothing is happening
+  digitalWrite(lastRead<6?lastRead+8:analog_pins[lastRead-6], LOW);//turn off last pin.  This probably isn't right.
+  
 
   
   //main play loop
   for (int key = 9; key >=2; key--){//mono with high-note priority
     detect = readCapacitivePin (key);
     if (detect >= minCap){
-      velocity = map(detect, minCap, maxCap, 1, 4095);
-      noteValue = ((octave==-1)&&(key<34))?0:(((octave*12)+(key-22))*semitoneValue);
-      noteVoltage.setVoltage(noteValue, false);
-      pressureVoltage.setVoltage(velocity, false);
+      digitalWrite(key<6?key+8:analog_pins[key-6], HIGH);//Again probably not right .  Yet.
       digitalWrite(gatePin, HIGH);
       lastRead = key;
       break;
     }
+    digitalWrite(lastRead<6?lastRead+8:analog_pins[lastRead-6],LOW);//?Right?
   }
 
 }
