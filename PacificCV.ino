@@ -10,25 +10,17 @@
 //  Middle C = midi note 60, defaults are E3 (52)-F4 (77)
 //  Octave will default to 4 using iOS standard
 #include <Wire.h>
-#include <Adafruit_MCP4725.h>
 #include "pins_arduino.h" // Arduino pre-1.0 needs this
 
-Adafruit_MCP4725 noteVoltage;//volt-per-octave
-Adafruit_MCP4725 pressureVoltage;//Pressure (expression)
 
-#define octaveUp 25
-#define octaveDown 24
-#define bendDown 2
-#define bendUp 3
-#define gatePin 7
+
+#define gatePin A4
 #define semitoneValue 68.25
 
-int noteValue, velocity,  detect, lastRead, minCap, maxCap, 
-    octave, octaveUpDetect, octaveDownDetect,lastOctaveUp,lastOctaveDown,
-    bendUpDetect, bendDownDetect, bendAmount;
+int detect, lastRead, minCap, maxCap,;
 void setup(){
   //note keys
-  for (int thisPin = 27; thisPin<=50;thisPin++){
+  for (int thisPin = 2; thisPin<=9;thisPin++){
     pinMode(thisPin,INPUT);
   }
   //octave keys
@@ -51,29 +43,9 @@ void loop(){
   if (detect<minCap) {digitalWrite(gatePin, LOW);}
   //octave up or down
 
-  if (readCapacitivePin(25)>3){
-    octave = ((lastOctaveUp==0)&&(octave<3))?octave+1:octave;
-    lastOctaveUp=1;
-   }else{lastOctaveUp=0;}//debounce
-  if (readCapacitivePin(24)>3){
-    octave = ((lastOctaveDown==0)&&(octave>-1))?octave-1:octave;
-    lastOctaveDown=1;
-   }else{lastOctaveDown=0;}  //debounce
-    //pitch bend
-  bendUpDetect = readCapacitivePin(bendUp);
-  bendDownDetect = readCapacitivePin(bendDown);
-  if (bendUpDetect>minCap or bendDownDetect>minCap){
-    if (bendUpDetect>bendDownDetect){
-        bendAmount = map(bendUpDetect, minCap, maxCap, 5, 60);
-    }
-     if (bendUpDetect<bendDownDetect){
-        bendAmount = -1*(map(bendDownDetect, minCap, maxCap, 5, 60));
-      }
-    }else{
-      bendAmount=0;
-    }
+  
   //main play loop
-  for (int key = 50; key >=27; key--){//mono with high-note priority
+  for (int key = 9; key >=2; key--){//mono with high-note priority
     detect = readCapacitivePin (key);
     if (detect >= minCap){
       velocity = map(detect, minCap, maxCap, 1, 4095);
