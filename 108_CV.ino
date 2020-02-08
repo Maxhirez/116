@@ -17,7 +17,7 @@
 #define gatePin A4
 static const uint8_t analog_pins[]={A0,A1,A2,A3};
 
-int detect, lastRead, minCap, maxCap,;
+int detect, lastRead, minCap, maxCap;
 void setup(){
   //note keys
   for (int thisPin = 2; thisPin<=9;thisPin++){
@@ -31,7 +31,7 @@ void setup(){
   lastRead = 0;
   minCap = 5;
   maxCap = 12;
-  octave = 2;
+
   digitalWrite(gatePin, LOW);
 }
 void loop(){
