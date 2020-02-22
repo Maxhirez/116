@@ -7,53 +7,75 @@
 // * (at your option) any later version.
 
 
-//  Middle C = midi note 60, defaults are E3 (52)-F4 (77)
-//  Octave will default to 4 using iOS standard
+
+//  0=record, 1=play
 #include <Wire.h>
 #include "pins_arduino.h" // Arduino pre-1.0 needs this
 
 
 
-#define gatePin A4
-static const uint8_t analog_pins[]={A0,A1,A2,A3};
+#define gatePin A5
+#define tempoPin A4
+#define recordPin 0
+#define playStopPin 1
+static const uint8_t output_pins[]={A3,A2,A1,A0,13,10,11,12};
+static const uint8_t gate_pin=A5;
 
-int detect, lastRead, minCap, maxCap;
+int detect, lastRead, minCap, maxCap, tempo, minTempo, maxTempo, tempoDelay;
+bool play=false;
 void setup(){
   //note keys
   for (int thisPin = 2; thisPin<=9;thisPin++){
     pinMode(thisPin,INPUT);
   }
-  for (int thisPin = 10; thisPin <= 17;thisPin++){
-    thisPin=thisPin<=13?thisPin:analog_pins[thisPin-14];//if this works I'll shit
-    pinMode(thisPin, OUTPUT);
-  }
-  pinMode(gatePin, OUTPUT);
+  //v/oct out
+  for (int i=0;i<8;i++){
+    pinMode(output_pins[i],OUTPUT);
+   }
+  pinMode(gate_pin,OUTPUT);
   lastRead = 0;
-  minCap = 5;
+  minCap = 3;
   maxCap = 12;
-
+  minTempo = 30;
+  maxTempo = 300;
   digitalWrite(gatePin, LOW);
+  pinMode(playStopPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(playStopPin), togglePlay, FALLING);
 }
+
 void loop(){
   //kill last note if released
   detect = readCapacitivePin(lastRead);
-  if (detect<minCap) {digitalWrite(gatePin, LOW);}//turn off if nothing is happening
-  digitalWrite(lastRead<6?lastRead+8:analog_pins[lastRead-6], LOW);//turn off last pin.  This probably isn't right.
-  
+  if (detect<minCap) {
+    digitalWrite(gatePin, LOW);//turn off if nothing is happening
+    digitalWrite(output_pins[lastRead], LOW);//turn off last pin.  This probably isn't right.
+   }
 
-  
-  //main play loop
+  //main controller play loop
   for (int key = 9; key >=2; key--){//mono with high-note priority
     detect = readCapacitivePin (key);
     if (detect >= minCap){
-      digitalWrite(key<6?key+8:analog_pins[key-6], HIGH);//Again probably not right .  Yet.
+      digitalWrite(output_pins[key-2], HIGH);//Again probably not right .  Yet.
       digitalWrite(gatePin, HIGH);
       lastRead = key;
       break;
     }
-    digitalWrite(lastRead<6?lastRead+8:analog_pins[lastRead-6],LOW);//?Right?
+    digitalWrite(output_pins[key-2],LOW);//?Right?
   }
 
+  //sequence loop
+  while(play){
+    for(int playNote=0;playNote<8;playNote++){
+      tempo = map(analogRead(tempoPin),0,1024,minTempo,maxTempo);
+      tempoDelay = 30000/tempo;//ms for 50% duty cycle
+      digitalWrite(output_pins[playNote], HIGH);
+      digitalWrite(gatePin, HIGH);
+      delay(tempoDelay);
+      digitalWrite(gatePin, LOW);
+      digitalWrite(output_pins[playNote], LOW);
+      delay(tempoDelay);
+    }
+}
 }
 
 
@@ -116,4 +138,9 @@ uint8_t readCapacitivePin(int pinToMeasure) {
   *ddr  |= bitmask;
 
   return cycles;
+}
+
+int togglePlay(){
+  //do stuff
+  play=!play; 
 }
